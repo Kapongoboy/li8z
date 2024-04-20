@@ -15,11 +15,11 @@ pub fn build(b: *std.Build) void {
     // set a preferred release mode, allowing the user to decide how to optimize.
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib = b.addStaticLibrary(.{
+    const backend = b.addStaticLibrary(.{
         .name = "li8z",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = b.path("src/root.zig"),
+        .root_source_file = b.path("src/backend.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -27,11 +27,11 @@ pub fn build(b: *std.Build) void {
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
-    b.installArtifact(lib);
+    b.installArtifact(backend);
 
-    const exe = b.addExecutable(.{
+    const desktop_bin = b.addExecutable(.{
         .name = "li8z",
-        .root_source_file = b.path("src/main.zig"),
+        .root_source_file = b.path("src/desktop.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -39,12 +39,12 @@ pub fn build(b: *std.Build) void {
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
-    b.installArtifact(exe);
+    b.installArtifact(desktop_bin);
 
     // This *creates* a Run step in the build graph, to be executed when another
     // step is evaluated that depends on it. The next line below will establish
     // such a dependency.
-    const run_cmd = b.addRunArtifact(exe);
+    const run_cmd = b.addRunArtifact(desktop_bin);
 
     // By making the run step depend on the install step, it will be run from the
     // installation directory rather than directly from within the cache directory.
@@ -67,7 +67,7 @@ pub fn build(b: *std.Build) void {
     // Creates a step for unit testing. This only builds the test executable
     // but does not run it.
     const lib_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/root.zig"),
+        .root_source_file = b.path("src/backend.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -75,7 +75,7 @@ pub fn build(b: *std.Build) void {
     const run_lib_unit_tests = b.addRunArtifact(lib_unit_tests);
 
     const exe_unit_tests = b.addTest(.{
-        .root_source_file = b.path("src/main.zig"),
+        .root_source_file = b.path("src/desktop.zig"),
         .target = target,
         .optimize = optimize,
     });
