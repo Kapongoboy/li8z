@@ -88,7 +88,12 @@ pub const Emu = struct {
     }
 
     fn execute(self: *Emu, op: u16) void {
-        // TODO
+        const digit1 = (op & 0xF000) >> 12;
+        const digit2 = (op & 0x0F00) >> 8;
+        const digit3 = (op & 0x00F0) >> 4;
+        const digit4 = (op & 0x000F);
+
+        if ((digit1 == 0) and (digit2 == 0) and (digit3 == 0) and (digit4 == 0)) return else unreachable;
     }
 
     fn fetch(self: *Emu) u16 {
