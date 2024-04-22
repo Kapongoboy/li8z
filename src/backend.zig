@@ -1,5 +1,5 @@
 const std = @import("std");
-const random = std.crypto.random.int(u8);
+const random = std.crypto.random;
 
 pub const SCREEN_WIDTH: usize = 64;
 pub const SCREEN_HEIGHT: usize = 32;
@@ -60,8 +60,8 @@ pub const Emu = struct {
         return new_emu;
     }
 
-    pub fn getDisplay(self: *Emu) *[]bool {
-        &self.screen;
+    pub fn getDisplay(self: *Emu) []bool {
+        return &self.screen;
     }
 
     pub fn keypress(self: *Emu, idx: usize, pressed: bool) void {
@@ -71,8 +71,10 @@ pub const Emu = struct {
     pub fn load(self: *Emu, data: *[]u8) void {
         const start: usize = @intCast(START_ADDR);
         const end: usize = start + data.len;
-        const ram_slice = self.ram[start..end];
-        ram_slice.* = data.*;
+
+        for (start..end) |i| {
+            self.ram[i] = data.*[i - start];
+        }
     }
 
     fn push(self: *Emu, val: u16) void {
@@ -146,11 +148,12 @@ pub const Emu = struct {
         } else if ((digit1 == 6)) {
             const x = digit2;
             const nn = op & 0xFF;
-            self.v_reg[@intCast(x)] = nn;
+            self.v_reg[@intCast(x)] = @intCast(nn);
         } else if ((digit1 == 7)) {
-            const x = digit2;
+            const x: usize = @intCast(digit2);
             const nn = op & 0xFF;
-            self.v_reg[@intCast(x)] = @addWithOverflow(self.v_reg[@intCast(x)], nn)[0];
+            const nn_u8: u8 = @intCast(nn);
+            self.v_reg[x] = @addWithOverflow(self.v_reg[x], nn_u8)[0];
         } else if ((digit1 == 8) and (digit4 == 0)) {
             const x = digit2;
             const y = digit3;
@@ -208,7 +211,8 @@ pub const Emu = struct {
         } else if (digit1 == 0xC) {
             const x = digit2;
             const nn = op & 0xFF;
-            self.v_reg[@intCast(x)] = random() & nn;
+            const nn_u8: u8 = @intCast(nn);
+            self.v_reg[@intCast(x)] = random.int(u8) & nn_u8;
         } else if (digit1 == 0xD) {
             const x_coord = self.v_reg[@intCast(digit2)];
             const y_coord = self.v_reg[@intCast(digit3)];
@@ -220,12 +224,13 @@ pub const Emu = struct {
                 const pixels = self.ram[@intCast(addr)];
 
                 for (0..8) |x_line| {
-                    if ((pixels & (0b1000_0000 >> x_line)) != 0) {
+                    const x_line_trunc: u4 = @intCast(x_line);
+                    if ((pixels & (@as(u16, 0b1000_0000) >> x_line_trunc)) != 0) {
                         const x = (x_coord + x_line) % SCREEN_WIDTH;
                         const y = (y_coord + y_line) % SCREEN_HEIGHT;
                         const idx = x + SCREEN_WIDTH * y;
-                        flipped |= self.screen[idx];
-                        self.screen[idx] ^= 1;
+                        flipped = flipped or self.screen[idx];
+                        self.screen[idx] = self.screen[idx] != true;
                     }
                 }
             }
@@ -281,9 +286,9 @@ pub const Emu = struct {
             const x: usize = @intCast(digit2);
             const vx: f32 = @floatFromInt(self.v_reg[x]);
 
-            const hundreds: u8 = @intFromFloat(@divFloor(vx, 100.0));
-            const tens: u8 = @intFromFloat(@divFloor(vx, 10.0) % 10.0);
-            const ones: u8 = @intFromFloat(vx % 10.0);
+            const hundreds: u8 = @intFromFloat(@rem(vx, 100.0));
+            const tens: u8 = @intFromFloat(@rem(@rem(vx, 10.0), 10.0));
+            const ones: u8 = @intFromFloat(@rem(vx, 10.0));
 
             self.ram[@intCast(self.i_reg)] = hundreds;
             self.ram[@intCast(self.i_reg + 1)] = tens;
@@ -300,8 +305,6 @@ pub const Emu = struct {
             for (0..x + 1) |idx| {
                 self.v_reg[idx] = self.ram[i + idx];
             }
-        } else {
-            unreachable;
         }
 
         return;
