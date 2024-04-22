@@ -6,6 +6,7 @@ const stdout = std.io.getStdOut().writer();
 const SCALE: u32 = 15;
 const WINDOW_WIDTH: u32 = li.SCREEN_WIDTH * SCALE;
 const WINDOW_HEIGHT: u32 = li.SCREEN_HEIGHT * SCALE;
+const TICKS_PER_FRAME: usize = 10;
 
 fn drawScreen(emu: *li.Emu) void {
     const screen_buf = emu.getDisplay();
@@ -62,7 +63,11 @@ pub fn main() !void {
         ray.BeginDrawing();
         defer ray.EndDrawing();
 
-        chip.tick();
+        for (0..TICKS_PER_FRAME) |_| {
+            chip.tick();
+        }
+
+        chip.tickTimers();
         drawScreen(&chip);
 
         ray.ClearBackground(ray.BLACK);

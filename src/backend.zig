@@ -318,7 +318,7 @@ pub const Emu = struct {
         return op;
     }
 
-    pub fn tick_timers(self: *Emu) void {
+    pub fn tickTimers(self: *Emu) void {
         if (self.dt > 0) self.dt -= 1;
 
         if (self.st > 0) {
