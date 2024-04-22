@@ -36,6 +36,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    desktop_bin.addIncludePath(.{ .path = ".packages/raylib/zig-out/include" });
+    desktop_bin.addObjectFile(.{ .path = ".packages/raylib/zig-out/lib/libraylib.a" });
+    desktop_bin.linkLibC();
+
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).

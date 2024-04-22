@@ -60,6 +60,21 @@ pub const Emu = struct {
         return new_emu;
     }
 
+    pub fn getDisplay(self: *Emu) *[]bool {
+        &self.screen;
+    }
+
+    pub fn keypress(self: *Emu, idx: usize, pressed: bool) void {
+        self.keys[idx] = pressed;
+    }
+
+    pub fn load(self: *Emu, data: *[]u8) void {
+        const start: usize = @intCast(START_ADDR);
+        const end: usize = start + data.len;
+        const ram_slice = self.ram[start..end];
+        ram_slice.* = data.*;
+    }
+
     fn push(self: *Emu, val: u16) void {
         self.stack[@intCast(self.sp)] = val;
         self.sp += 1;
