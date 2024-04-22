@@ -1,3 +1,6 @@
+const std = @import("std");
+const random = std.crypto.random.int(u8);
+
 pub const SCREEN_WIDTH: usize = 64;
 pub const SCREEN_HEIGHT: usize = 32;
 
@@ -93,7 +96,200 @@ pub const Emu = struct {
         const digit3 = (op & 0x00F0) >> 4;
         const digit4 = (op & 0x000F);
 
-        if ((digit1 == 0) and (digit2 == 0) and (digit3 == 0) and (digit4 == 0)) return else unreachable;
+        if ((digit1 == 0) and (digit2 == 0) and (digit3 == 0) and (digit4 == 0)) return;
+
+        if ((digit1 == 0) and (digit2 == 0) and (digit3 == 0xE) and (digit4 == 0)) {
+            self.screen = undefined;
+        } else if ((digit1 == 0) and (digit2 == 0) and (digit3 == 0xE) and (digit4 == 0xE)) {
+            const ret_addr = self.pop();
+            self.pc = ret_addr;
+        } else if ((digit1 == 1)) {
+            const nnn = op & 0xFFF;
+            self.pc = nnn;
+        } else if ((digit1 == 2)) {
+            const nnn = op & 0xFFF;
+            self.push(self.pc);
+            self.pc = nnn;
+        } else if ((digit1 == 3)) {
+            const x = digit2;
+            const nn = op & 0xFF;
+            if (self.v_reg[@intCast(x)] == nn) {
+                self.pc += 2;
+            }
+        } else if ((digit1 == 4)) {
+            const x = digit2;
+            const nn = op & 0xFF;
+            if (self.v_reg[@intCast(x)] != nn) {
+                self.pc += 2;
+            }
+        } else if ((digit1 == 5) and (digit4 == 0)) {
+            const x = digit2;
+            const y = digit3;
+            if (self.v_reg[@intCast(x)] == self.v_reg[@intCast(y)]) {
+                self.pc += 2;
+            }
+        } else if ((digit1 == 6)) {
+            const x = digit2;
+            const nn = op & 0xFF;
+            self.v_reg[@intCast(x)] = nn;
+        } else if ((digit1 == 7)) {
+            const x = digit2;
+            const nn = op & 0xFF;
+            self.v_reg[@intCast(x)] = @addWithOverflow(self.v_reg[@intCast(x)], nn)[0];
+        } else if ((digit1 == 8) and (digit4 == 0)) {
+            const x = digit2;
+            const y = digit3;
+            self.v_reg[@intCast(x)] = self.v_reg[@intCast(y)];
+        } else if ((digit1 == 8) and (digit4 == 1)) {
+            const x = digit2;
+            const y = digit3;
+            self.v_reg[@intCast(x)] |= self.v_reg[@intCast(y)];
+        } else if ((digit1 == 8) and (digit4 == 2)) {
+            const x = digit2;
+            const y = digit3;
+            self.v_reg[@intCast(x)] &= self.v_reg[@intCast(y)];
+        } else if ((digit1 == 8) and (digit4 == 3)) {
+            const x = digit2;
+            const y = digit3;
+            self.v_reg[@intCast(x)] ^= self.v_reg[@intCast(y)];
+        } else if ((digit1 == 8) and (digit4 == 4)) {
+            const x = digit2;
+            const y = digit3;
+            const result = @addWithOverflow(self.v_reg[@intCast(x)], self.v_reg[@intCast(y)]);
+            self.v_reg[@intCast(x)] = result[0];
+            self.v_reg[0xF] = result[1];
+        } else if ((digit1 == 8) and (digit4 == 5)) {
+            const x = digit2;
+            const y = digit3;
+            const result = @subWithOverflow(self.v_reg[@intCast(x)], self.v_reg[@intCast(y)]);
+            self.v_reg[@intCast(x)] = result[0];
+            self.v_reg[0xF] = if (result[1] == 1) 0 else 1;
+        } else if ((digit1 == 8) and (digit4 == 6)) {
+            const x = digit2;
+            self.v_reg[0xF] = self.v_reg[@intCast(x)] & 0x1;
+            self.v_reg[@intCast(x)] >>= 1;
+        } else if ((digit1 == 8) and (digit4 == 7)) {
+            const x = digit2;
+            const y = digit3;
+            const result = @subWithOverflow(self.v_reg[@intCast(y)], self.v_reg[@intCast(x)]);
+            self.v_reg[@intCast(x)] = result[0];
+            self.v_reg[0xF] = if (result[1] == 1) 0 else 1;
+        } else if ((digit1 == 8) and (digit4 == 0xE)) {
+            const x = digit2;
+            self.v_reg[0xF] = (self.v_reg[@intCast(x)] >> 7) & 0x1;
+            self.v_reg[@intCast(x)] <<= 1;
+        } else if ((digit1 == 9) and (digit4 == 0)) {
+            const x = digit2;
+            const y = digit3;
+            if (self.v_reg[@intCast(x)] != self.v_reg[@intCast(y)]) {
+                self.pc += 2;
+            }
+        } else if (digit1 == 0xA) {
+            const nnn = op & 0xFFF;
+            self.i_reg = nnn;
+        } else if (digit1 == 0xB) {
+            const nnn = op & 0xFFF;
+            self.pc = nnn + self.v_reg[0];
+        } else if (digit1 == 0xC) {
+            const x = digit2;
+            const nn = op & 0xFF;
+            self.v_reg[@intCast(x)] = random() & nn;
+        } else if (digit1 == 0xD) {
+            const x_coord = self.v_reg[@intCast(digit2)];
+            const y_coord = self.v_reg[@intCast(digit3)];
+            const num_rows = digit4;
+            var flipped = false;
+
+            for (0..num_rows) |y_line| {
+                const addr = self.i_reg + y_line;
+                const pixels = self.ram[@intCast(addr)];
+
+                for (0..8) |x_line| {
+                    if ((pixels & (0b1000_0000 >> x_line)) != 0) {
+                        const x = (x_coord + x_line) % SCREEN_WIDTH;
+                        const y = (y_coord + y_line) % SCREEN_HEIGHT;
+                        const idx = x + SCREEN_WIDTH * y;
+                        flipped |= self.screen[idx];
+                        self.screen[idx] ^= 1;
+                    }
+                }
+            }
+
+            if (flipped) {
+                self.v_reg[0xF] = 1;
+            } else {
+                self.v_reg[0xF] = 0;
+            }
+        } else if ((digit1 == 0xE) and (digit3 == 9) and (digit4 == 0xE)) {
+            const x: usize = @intCast(digit2);
+            const vx = self.v_reg[x];
+            const key = self.keys[@intCast(vx)];
+            if (key) {
+                self.pc += 2;
+            }
+        } else if ((digit1 == 0xE) and (digit3 == 0xA) and (digit4 == 1)) {
+            const x: usize = @intCast(digit2);
+            const vx = self.v_reg[x];
+            const key = self.keys[@intCast(vx)];
+            if (!key) {
+                self.pc += 2;
+            }
+        } else if ((digit1 == 0xF) and (digit3 == 0) and (digit4 == 7)) {
+            const x: usize = @intCast(digit2);
+            self.v_reg[x] = self.dt;
+        } else if ((digit1 == 0xF) and (digit3 == 0) and (digit4 == 0xA)) {
+            const x: usize = @intCast(digit2);
+            var pressed = false;
+            for (0..self.keys.len) |i| {
+                if (self.keys[i]) {
+                    self.v_reg[x] = @intCast(i);
+                    pressed = true;
+                    break;
+                }
+            }
+
+            if (!pressed) {
+                self.pc -= 2;
+            }
+        } else if ((digit1 == 0xF) and (digit3 == 1) and (digit4 == 8)) {
+            const x: usize = @intCast(digit2);
+            self.st = self.v_reg[x];
+        } else if ((digit1 == 0xF) and (digit3 == 1) and (digit4 == 0xE)) {
+            const x: usize = @intCast(digit2);
+            const vx = self.v_reg[x];
+            self.i_reg = @addWithOverflow(self.i_reg, vx)[0];
+        } else if ((digit1 == 0xF) and (digit3 == 2) and (digit4 == 9)) {
+            const x: usize = @intCast(digit2);
+            const c = self.v_reg[x];
+            self.i_reg = c * 5;
+        } else if ((digit1 == 0xF) and (digit3 == 3) and (digit4 == 3)) {
+            const x: usize = @intCast(digit2);
+            const vx: f32 = @floatFromInt(self.v_reg[x]);
+
+            const hundreds: u8 = @intFromFloat(@divFloor(vx, 100.0));
+            const tens: u8 = @intFromFloat(@divFloor(vx, 10.0) % 10.0);
+            const ones: u8 = @intFromFloat(vx % 10.0);
+
+            self.ram[@intCast(self.i_reg)] = hundreds;
+            self.ram[@intCast(self.i_reg + 1)] = tens;
+            self.ram[@intCast(self.i_reg + 2)] = ones;
+        } else if ((digit1 == 0xF) and (digit3 == 5) and (digit4 == 5)) {
+            const x: usize = @intCast(digit2);
+            const i: usize = @intCast(self.i_reg);
+            for (0..x + 1) |idx| {
+                self.ram[i + idx] = self.v_reg[idx];
+            }
+        } else if ((digit1 == 0xF) and (digit3 == 6) and (digit4 == 5)) {
+            const x: usize = @intCast(digit2);
+            const i: usize = @intCast(self.i_reg);
+            for (0..x + 1) |idx| {
+                self.v_reg[idx] = self.ram[i + idx];
+            }
+        } else {
+            unreachable;
+        }
+
+        return;
     }
 
     fn fetch(self: *Emu) u16 {
@@ -117,8 +313,6 @@ pub const Emu = struct {
 };
 
 test "Undefined arrays correct" {
-    const std = @import("std");
-
     const emu = Emu.init();
 
     try std.testing.expectEqual(512, emu.pc);
@@ -141,8 +335,6 @@ test "Undefined arrays correct" {
 }
 
 test "FONTSET slice write" {
-    const std = @import("std");
-
     const emu = Emu.init();
 
     try std.testing.expectEqual(FONTSET, emu.ram[0..80].*);
