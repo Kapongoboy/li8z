@@ -2,6 +2,8 @@ const std = @import("std");
 const ray = @cImport(@cInclude("raylib.h"));
 const li = @import("backend.zig");
 const stdout = std.io.getStdOut().writer();
+const stdin = std.io.getStdIn().reader();
+const zaudio = @import("zaudio");
 
 const SCALE: u32 = 15;
 const WINDOW_WIDTH: u32 = li.SCREEN_WIDTH * SCALE;
@@ -62,6 +64,21 @@ fn drawScreen(emu: *li.Emu) void {
 }
 
 pub fn main() !void {
+    zaudio.init(std.heap.page_allocator);
+    defer zaudio.deinit();
+
+    const engine = try zaudio.Engine.create(null);
+    defer engine.destroy();
+
+    const music = try engine.createSoundFromFile(
+        "./assets/beep-02.wav",
+        .{ .flags = .{ .stream = true } },
+    );
+    defer music.destroy();
+    try music.start();
+    try stdout.print("Press enter to stop... ", .{});
+    _ = try stdin.readByte();
+
     var arg_iter = try std.process.ArgIterator.initWithAllocator(std.heap.page_allocator);
     defer arg_iter.deinit();
 
@@ -117,22 +134,6 @@ pub fn main() !void {
                 }
             }
         }
-
-        // if (ray.IsKeyPressed(ray.KEY_ESCAPE)) {
-        //     break;
-        // }
-        //
-        // if (ray.IsKeyDown(ray.GetKeyPressed())) {
-        //     if (key2btn(ray.GetKeyPressed())) |k| {
-        //         chip.keypress(k, true);
-        //     }
-        // }
-        //
-        // if (ray.IsKeyUp(ray.GetKeyPressed())) {
-        //     if (key2btn(ray.GetKeyPressed())) |k| {
-        //         chip.keypress(k, false);
-        //     }
-        // }
 
         for (0..TICKS_PER_FRAME) |_| {
             chip.tick();

@@ -36,6 +36,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const zaudio = b.dependency("zaudio", .{});
+    desktop_bin.root_module.addImport("zaudio", zaudio.module("root"));
+    desktop_bin.linkLibrary(zaudio.artifact("miniaudio"));
     desktop_bin.addIncludePath(.{ .path = ".packages/raylib/zig-out/include" });
     desktop_bin.addObjectFile(.{ .path = ".packages/raylib/zig-out/lib/libraylib.a" });
     desktop_bin.linkLibC();
