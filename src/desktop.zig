@@ -71,7 +71,7 @@ pub fn main() !void {
     defer engine.destroy();
 
     const music = try engine.createSoundFromFile(
-        "./assets/beep-02.wav",
+        "./public/beep-02.wav",
         .{ .flags = .{ .stream = true } },
     );
     defer music.destroy();
