@@ -318,15 +318,17 @@ pub const Emu = struct {
         return op;
     }
 
-    pub fn tickTimers(self: *Emu) void {
+    pub fn tickTimers(self: *Emu) bool {
+        var beep = false;
         if (self.dt > 0) self.dt -= 1;
 
         if (self.st > 0) {
             if (self.st == 1) {
-                // GONNA BEEP HERE
+                beep = true;
             }
             self.st -= 1;
         }
+        return beep;
     }
 };
 

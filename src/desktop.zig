@@ -75,9 +75,6 @@ pub fn main() !void {
         .{ .flags = .{ .stream = true } },
     );
     defer music.destroy();
-    try music.start();
-    try stdout.print("Press enter to stop... ", .{});
-    _ = try stdin.readByte();
 
     var arg_iter = try std.process.ArgIterator.initWithAllocator(std.heap.page_allocator);
     defer arg_iter.deinit();
@@ -139,7 +136,7 @@ pub fn main() !void {
             chip.tick();
         }
 
-        chip.tickTimers();
+        if (chip.tickTimers()) try music.start();
         drawScreen(&chip);
 
         ray.ClearBackground(ray.BLACK);
