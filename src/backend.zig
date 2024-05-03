@@ -44,13 +44,13 @@ pub const Emu = struct {
     pub fn init() Emu {
         var new_emu = Emu{
             .pc = START_ADDR,
-            .ram = undefined,
-            .screen = undefined,
-            .v_reg = undefined,
+            .ram = [_]u8{0} ** RAM_SIZE,
+            .screen = [_]bool{false} ** (SCREEN_WIDTH * SCREEN_HEIGHT),
+            .v_reg = [_]u8{0} ** NUM_REGS,
             .i_reg = 0,
             .sp = 0,
-            .stack = undefined,
-            .keys = undefined,
+            .stack = [_]u16{0} ** STACK_SIZE,
+            .keys = [_]bool{false} ** NUM_KEYS,
             .dt = 0,
             .st = 0,
         };
@@ -93,11 +93,11 @@ pub const Emu = struct {
         self.sp = 0;
         self.dt = 0;
         self.st = 0;
-        self.screen = undefined;
-        self.v_reg = undefined;
-        self.stack = undefined;
-        self.keys = undefined;
-        self.ram = undefined;
+        self.screen = [_]bool{false} ** (SCREEN_WIDTH * SCREEN_HEIGHT);
+        self.v_reg = [_]u8{0} ** NUM_REGS;
+        self.stack = [_]u16{0} ** STACK_SIZE;
+        self.keys = [_]bool{false} ** NUM_KEYS;
+        self.ram = [_]u8{0} ** RAM_SIZE;
         const ram_slice = self.ram[0..80];
         ram_slice.* = FONTSET;
     }
@@ -116,7 +116,7 @@ pub const Emu = struct {
         if ((digit1 == 0) and (digit2 == 0) and (digit3 == 0) and (digit4 == 0)) return;
 
         if ((digit1 == 0) and (digit2 == 0) and (digit3 == 0xE) and (digit4 == 0)) {
-            self.screen = undefined;
+            self.screen = [_]bool{false} ** (SCREEN_WIDTH * SCREEN_HEIGHT);
         } else if ((digit1 == 0) and (digit2 == 0) and (digit3 == 0xE) and (digit4 == 0xE)) {
             const ret_addr = self.pop();
             self.pc = ret_addr;

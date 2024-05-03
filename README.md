@@ -41,7 +41,7 @@ In order to run the emulator without interacting with the binary yourself. The
 zig build system does have an install option, although it is at your own
 discretion as the emulator is still a work in progress.
 
-The emulator can be built with release options but that has resulted in some
-rendering issues for some games.  The web port of the emulator is still largely
-incomplete and the use of a typescript backend for the final implementation has
-not been finalized.
+The bug present that affected some games when building in release mode have
+been solved, so you may build in your preferred release mode with confidence.
+The web port of the emulator is still largely incomplete and the use of a
+typescript backend for the final implementation has not been finalized.
