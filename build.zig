@@ -39,8 +39,10 @@ pub fn build(b: *std.Build) void {
     const zaudio = b.dependency("zaudio", .{});
     desktop_bin.root_module.addImport("zaudio", zaudio.module("root"));
     desktop_bin.linkLibrary(zaudio.artifact("miniaudio"));
-    desktop_bin.addIncludePath(.{ .path = ".packages/raylib/zig-out/include" });
-    desktop_bin.addObjectFile(.{ .path = ".packages/raylib/zig-out/lib/libraylib.a" });
+    desktop_bin.addIncludePath(.{
+        .cwd_relative = ".packages/raylib/zig-out/include",
+    });
+    desktop_bin.addObjectFile(.{ .cwd_relative = ".packages/raylib/zig-out/lib/libraylib.a" });
     desktop_bin.linkLibC();
 
     // This declares intent for the executable to be installed into the

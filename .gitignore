@@ -31,3 +31,4 @@ zig-out/
 /build-*/
 /docgen_tmp/
 .packages/
+.zig-cache/
