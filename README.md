@@ -8,14 +8,14 @@ project is complete I will tag a release, until then thank you for reading and
 hope you are well.
 
 The project is in a decent place right now, as you can load roms and play them.
-Audio and controls work, with a few games experiencing some issues. For example
+Audio and controls work, with a few games experiencing some issues. For reference
 this is tictactoe running on the emulator.
 
 ![tictactoe](./public/game_window.png)
 
 ## Building
 
-Though I tried to keep the project as zig only as possible, due to the majority
+Though I tried to keep the project as zig only as possible, due to the immaturity
 of the language I had to rely a bit on some C libraries, in particular
 [raylib](https://www.raylib.com/) and [miniaudio](https://miniaud.io/) (through
 a zig wrapper by
@@ -26,10 +26,10 @@ packages and use them appropriately for the project. After the script succeeds,
 you can build the emulator with
 
 ```bash
-zig build
+zig build --release=safe
 ```
 
-The built binary can then be found in `zig-out/bin/li8z` and requires and
+The built binary can then be found in `zig-out/bin/li8z` and requires an
 argument that is the path to the rom you would like to play. For testing you can
 simply run:
 
