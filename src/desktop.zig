@@ -74,6 +74,7 @@ pub fn main() !void {
         "./public/beep-02.wav",
         .{ .flags = .{ .stream = true } },
     );
+    music.setVolume(0.1);
     defer music.destroy();
 
     var arg_iter = try std.process.ArgIterator.initWithAllocator(std.heap.page_allocator);
