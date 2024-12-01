@@ -15,8 +15,7 @@
     // Once all dependencies are fetched, `zig build` no longer requires
     // internet connectivity.
     .dependencies = .{
-        .system_sdk = .{ .path = "./.packages/zig-gamedev/libs/system-sdk" },
-        .zaudio = .{ .path = "./.packages/zig-gamedev/libs/zaudio" },
+        .zaudio = .{ .path = "./.packages/zaudio" },
         // See `zig fetch --save <url>` for a command-line interface for adding dependencies.
         //.example = .{
         //    // When updating this field to a new URL, be sure to delete the corresponding
