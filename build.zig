@@ -25,9 +25,9 @@ pub fn build(b: *std.Build) void {
     desktop_bin.root_module.addImport("zaudio", zaudio.module("root"));
     desktop_bin.linkLibrary(zaudio.artifact("miniaudio"));
     desktop_bin.addIncludePath(.{
-        .cwd_relative = ".packages/raylib/zig-out/include",
+        .cwd_relative = ".packages/raylib/build/raylib/include",
     });
-    desktop_bin.addObjectFile(.{ .cwd_relative = ".packages/raylib/zig-out/lib/libraylib.a" });
+    desktop_bin.addObjectFile(b.path(".packages/raylib/build/raylib/libraylib.a"));
     desktop_bin.linkLibC();
 
     b.installArtifact(desktop_bin);
