@@ -22,8 +22,10 @@ a zig wrapper by
 [zig-gamedev](https://github.com/zig-gamedev/zig-gamedev/tree/main/libs/zaudio)).
 
 The `bootstrap.sh` and `boostrap.ps1` scripts are provided to pull the correct
-packages and use them appropriately for the project. After the script succeeds,
-you can build the emulator with
+packages and use them appropriately for the project. As builds are often tried
+against the latest unstable version of zig, raylib is now built by the
+bootstrapper using `cmake` and `ninja` as they guarantee reliability during a
+tumultuous zig development cycle. After the script succeeds, you can build the
 
 ```bash
 zig build --release=safe
