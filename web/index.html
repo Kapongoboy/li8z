@@ -102,7 +102,15 @@ Z X C V  →  A 0 B F
                 imageData.data[offset + 3] = 255;   // A
             }
             
+            // Draw the small image
             ctx.putImageData(imageData, 0, 0);
+            
+            // Scale it up to fill the canvas
+            ctx.imageSmoothingEnabled = false;  // Keep pixels sharp
+            ctx.drawImage(canvas, 
+                0, 0, 64, 32,  // Source coords
+                0, 0, canvas.width, canvas.height  // Destination coords
+            );
         }
 
         function loop() {
@@ -114,6 +122,7 @@ Z X C V  →  A 0 B F
                 const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
                 audio.play();
             }
+            
             draw();
             requestAnimationFrame(loop);
         }

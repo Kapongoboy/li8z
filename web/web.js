@@ -86,4 +86,28 @@ export const Li8z = {
 };
 
 // Auto-initialize when the script is loaded
-Li8z.init().catch(console.error); 
+Li8z.init().catch(console.error);
+
+function draw() {
+    const screen = Li8z.getScreen();
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Calculate pixel size to scale up the display
+    const pixelWidth = canvas.width / 64;
+    const pixelHeight = canvas.height / 32;
+    
+    ctx.fillStyle = '#fff';
+    for (let y = 0; y < 32; y++) {
+        for (let x = 0; x < 64; x++) {
+            if (screen[x + y * 64]) {
+                ctx.fillRect(
+                    x * pixelWidth, 
+                    y * pixelHeight, 
+                    pixelWidth, 
+                    pixelHeight
+                );
+            }
+        }
+    }
+} 

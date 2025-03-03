@@ -190,7 +190,8 @@ void emuKeypress(Emu* emu, size_t key, bool pressed) {
 
 // Get pointer to screen buffer
 bool* getScreenPtr(Emu* emu) {
-    return emu->screen;
+    if (!emu) return NULL;
+    return emu->screen;  // Return direct pointer to screen buffer
 }
 
 // Execute a single opcode
