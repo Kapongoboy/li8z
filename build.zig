@@ -64,24 +64,35 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_exe_unit_tests.step);
 
     // Add WASM compilation target
-    const wasm = b.addStaticLibrary(.{
+    const wasm = b.addExecutable(.{
         .name = "li8z-wasm",
         .root_source_file = b.path("src/backend.zig"),
         .target = b.resolveTargetQuery(.{
             .cpu_arch = .wasm32,
-            .os_tag = .freestanding,
+            .os_tag = .wasi,
         }),
         .optimize = optimize,
     });
 
     // Configure WASM output
-    wasm.rdynamic = true;
+    wasm.entry = .disabled;
+    wasm.export_table = true;
     wasm.import_memory = true;
     wasm.initial_memory = 65536;
     wasm.max_memory = 65536;
     wasm.stack_size = 14752;
 
-    // Install WASM artifact
+    // Export all functions
+    wasm.export_symbol_names = &[_][]const u8{
+        "createEmulator",
+        "loadROM",
+        "emuTick",
+        "emuTickTimers",
+        "emuKeypress",
+        "getScreenPtr",
+    };
+
+    // Install WASM artifact with custom name
     const install_wasm = b.addInstallArtifact(wasm, .{});
 
     // Add a build step specifically for WASM

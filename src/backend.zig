@@ -68,7 +68,7 @@ pub const Emu = struct {
         self.keys[idx] = pressed;
     }
 
-    pub fn load(self: *Emu, data: *[]u8) void {
+    pub fn load(self: *Emu, data: *const []const u8) void {
         const start: usize = @intCast(START_ADDR);
         const end: usize = start + data.len;
 
@@ -331,6 +331,32 @@ pub const Emu = struct {
         return beep;
     }
 };
+
+export fn createEmulator() callconv(.C) *Emu {
+    var emu = Emu.init();
+    return &emu;
+}
+
+export fn loadROM(emu: *Emu, data_ptr: [*]const u8, length: usize) callconv(.C) void {
+    const buffer: []u8 = emu.ram[Emu.START_ADDR .. Emu.START_ADDR + length];
+    @memcpy(buffer, data_ptr[0..length]);
+}
+
+export fn emuTick(emu: *Emu) callconv(.C) void {
+    emu.tick();
+}
+
+export fn emuTickTimers(emu: *Emu) callconv(.C) bool {
+    return emu.tickTimers();
+}
+
+export fn emuKeypress(emu: *Emu, key: usize, pressed: bool) callconv(.C) void {
+    emu.keypress(key, pressed);
+}
+
+export fn getScreenPtr(emu: *Emu) callconv(.C) [*]bool {
+    return emu.screen[0..].ptr;
+}
 
 test "Undefined arrays correct" {
     const emu = Emu.init();
