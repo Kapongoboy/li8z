@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Li8z Web Demo</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        canvas {
+            border: 2px solid #333;
+            image-rendering: pixelated;
+            margin: 20px 0;
+        }
+        #controls {
+            margin: 20px 0;
+        }
+        .key-map {
+            font-family: monospace;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Li8z Web Demo</h1>
+    <div id="controls">
+        <input type="file" id="rom-input" accept=".ch8">
+        <button id="start">Start</button>
+    </div>
+    <canvas id="screen" width="640" height="320"></canvas>
+    <div class="key-map">
+        Keyboard Layout:
+        <pre>
+1 2 3 4  →  1 2 3 C
+Q W E R  →  4 5 6 D
+A S D F  →  7 8 9 E
+Z X C V  →  A 0 B F
+        </pre>
+    </div>
+
+    <!-- Load Emscripten generated code first -->
+    <script src="li8z.js"></script>
+    <script type="module">
+        import { Li8z } from './web.js';
+        
+        const canvas = document.getElementById('screen');
+        const ctx = canvas.getContext('2d');
+        const scale = 10;
+        
+        // Initialize
+        await Li8z.init();
+
+        // Key mapping
+        const keyMap = {
+            '1': 0x1, '2': 0x2, '3': 0x3, '4': 0xC,
+            'q': 0x4, 'w': 0x5, 'e': 0x6, 'r': 0xD,
+            'a': 0x7, 's': 0x8, 'd': 0x9, 'f': 0xE,
+            'z': 0xA, 'x': 0x0, 'c': 0xB, 'v': 0xF
+        };
+
+        // Handle key events
+        document.addEventListener('keydown', (e) => {
+            const key = keyMap[e.key.toLowerCase()];
+            if (key !== undefined) {
+                Li8z.keypress(key, true);
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            const key = keyMap[e.key.toLowerCase()];
+            if (key !== undefined) {
+                Li8z.keypress(key, false);
+            }
+        });
+
+        // ROM loading
+        document.getElementById('rom-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const arrayBuffer = await file.arrayBuffer();
+                const romData = new Uint8Array(arrayBuffer);
+                Li8z.loadROM(romData);
+            }
+        });
+
+        // Main loop
+        function draw() {
+            const screen = Li8z.getScreen();
+            const imageData = ctx.createImageData(64, 32);
+            
+            for (let i = 0; i < screen.length; i++) {
+                const offset = i * 4;
+                const value = screen[i] ? 255 : 0;
+                imageData.data[offset] = value;     // R
+                imageData.data[offset + 1] = value; // G
+                imageData.data[offset + 2] = value; // B
+                imageData.data[offset + 3] = 255;   // A
+            }
+            
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        function loop() {
+            for (let i = 0; i < 10; i++) {
+                Li8z.tick();
+            }
+            if (Li8z.tickTimers()) {
+                // Play beep sound
+                const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
+                audio.play();
+            }
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        document.getElementById('start').addEventListener('click', () => {
+            loop();
+        });
+    </script>
+</body>
+</html> 
