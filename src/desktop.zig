@@ -108,7 +108,8 @@ pub fn main() !void {
 
     try buffer.appendSlice(data);
 
-    chip.load(&buffer.items);
+    var rom_data: []const u8 = buffer.items;
+    chip.load(&rom_data);
 
     ray.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Li8z");
     defer ray.CloseWindow();
