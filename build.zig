@@ -82,16 +82,6 @@ pub fn build(b: *std.Build) void {
     wasm.max_memory = 65536;
     wasm.stack_size = 14752;
 
-    // Export all functions
-    wasm.export_symbol_names = &[_][]const u8{
-        "createEmulator",
-        "loadROM",
-        "emuTick",
-        "emuTickTimers",
-        "emuKeypress",
-        "getScreenPtr",
-    };
-
     // Install WASM artifact with custom name
     const install_wasm = b.addInstallArtifact(wasm, .{});
 
