@@ -9,6 +9,8 @@ class CustomHandler(http.server.SimpleHTTPRequestHandler):
             return 'application/wasm'
         if path.endswith('.html'):
             return 'text/html; charset=utf-8'
+        if path.endswith('.ico'):
+            return 'image/x-icon'
         return super().guess_type(path)
 
 PORT = 8080
