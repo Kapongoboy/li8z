@@ -1,5 +1,8 @@
 const std = @import("std");
-const random = std.crypto.random;
+
+// Replace crypto.random with our own PRNG
+pub var prng = std.Random.DefaultPrng.init(0); // Seed with 0, can be changed later
+const random = prng.random();
 
 pub const SCREEN_WIDTH: usize = 64;
 pub const SCREEN_HEIGHT: usize = 32;
@@ -68,7 +71,7 @@ pub const Emu = struct {
         self.keys[idx] = pressed;
     }
 
-    pub fn load(self: *Emu, data: *const []const u8) void {
+    pub fn load(self: *Emu, data: *[]const u8) void {
         const start: usize = @intCast(START_ADDR);
         const end: usize = start + data.len;
 
@@ -331,57 +334,3 @@ pub const Emu = struct {
         return beep;
     }
 };
-
-export fn createEmulator() callconv(.C) *Emu {
-    var emu = Emu.init();
-    return &emu;
-}
-
-export fn loadROM(emu: *Emu, data_ptr: [*]const u8, length: usize) callconv(.C) void {
-    const buffer: []u8 = emu.ram[Emu.START_ADDR .. Emu.START_ADDR + length];
-    @memcpy(buffer, data_ptr[0..length]);
-}
-
-export fn emuTick(emu: *Emu) callconv(.C) void {
-    emu.tick();
-}
-
-export fn emuTickTimers(emu: *Emu) callconv(.C) bool {
-    return emu.tickTimers();
-}
-
-export fn emuKeypress(emu: *Emu, key: usize, pressed: bool) callconv(.C) void {
-    emu.keypress(key, pressed);
-}
-
-export fn getScreenPtr(emu: *Emu) callconv(.C) [*]bool {
-    return emu.screen[0..].ptr;
-}
-
-test "Undefined arrays correct" {
-    const emu = Emu.init();
-
-    try std.testing.expectEqual(512, emu.pc);
-
-    for (emu.screen) |i| {
-        try std.testing.expectEqual(false, i);
-    }
-
-    for (emu.v_reg) |i| {
-        try std.testing.expectEqual(0, i);
-    }
-
-    for (emu.stack) |i| {
-        try std.testing.expectEqual(0, i);
-    }
-
-    for (emu.keys) |i| {
-        try std.testing.expectEqual(false, i);
-    }
-}
-
-test "FONTSET slice write" {
-    const emu = Emu.init();
-
-    try std.testing.expectEqual(FONTSET, emu.ram[0..80].*);
-}

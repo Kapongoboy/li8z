@@ -64,24 +64,37 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_exe_unit_tests.step);
 
     // Add WASM compilation target
-    const wasm = b.addExecutable(.{
-        .name = "li8z-wasm",
-        .root_source_file = b.path("src/backend.zig"),
-        .target = b.resolveTargetQuery(.{
-            .cpu_arch = .wasm32,
-            .os_tag = .wasi,
-        }),
+    const wasm_mod = b.createModule(.{
+        .root_source_file = b.path("src/web.zig"),
+        .target = b.resolveTargetQuery(.{ .cpu_arch = .wasm32, .os_tag = .freestanding }),
         .optimize = optimize,
     });
 
-    // Configure WASM output
-    wasm.entry = .disabled;
-    wasm.export_table = true;
-    wasm.import_memory = true;
-    wasm.initial_memory = 65536;
-    wasm.max_memory = 65536;
-    wasm.stack_size = 14752;
+    wasm_mod.export_symbol_names = &[_][]const u8{
+        "initEmulator",
+        "tickEmulator",
+        "tickTimers",
+        "keyPress",
+        "getScreenPtr",
+        "loadROM",
+        "resetEmulator",
+        "getScreenWidth",
+        "getScreenHeight",
+    };
 
+    const wasm = b.addExecutable(.{
+        .linkage = .static,
+        .name = "li8z-web",
+        .root_module = wasm_mod,
+    });
+
+    // Configure WASM output
+    wasm.rdynamic = true;
+    wasm.export_memory = true;
+    wasm.import_memory = true;
+    wasm.initial_memory = 17 * 64 * 1024; // 17 pages (~1.1MB)
+    wasm.max_memory = 17 * 64 * 1024;
+    wasm.entry = .disabled;
     // Install WASM artifact with custom name
     const install_wasm = b.addInstallArtifact(wasm, .{});
 

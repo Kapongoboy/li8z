@@ -1,39 +1,48 @@
 // Memory management helpers
+let memory;
+let exports;
 let emulator;
 let screenArray;
 
 // Initialize the WASM module
 async function initWasm() {
     try {
-        // Wait for Emscripten to initialize
-        await new Promise(resolve => {
-            Module.onRuntimeInitialized = () => resolve();
-        });
-
-        // Create wrapper functions
-        const api = {
-            createEmulator: Module.cwrap('createEmulator', 'number', []),
-            loadROM: Module.cwrap('loadROM', null, ['number', 'array', 'number']),
-            emuTick: Module.cwrap('emuTick', null, ['number']),
-            emuTickTimers: Module.cwrap('emuTickTimers', 'boolean', ['number']),
-            emuKeypress: Module.cwrap('emuKeypress', null, ['number', 'number', 'boolean']),
-            getScreenPtr: Module.cwrap('getScreenPtr', 'number', ['number']),
+        const response = await fetch('/zig-out/bin/li8z-web.wasm');
+        const wasmBytes = await response.arrayBuffer();
+        
+        const importObject = {
+            env: {
+                memory: new WebAssembly.Memory({ 
+                    initial: 17,  // ~1.1MB = 17 pages (64KB per page)
+                    maximum: 17
+                }),
+            }
         };
-
+        
+        const wasmModule = await WebAssembly.instantiate(wasmBytes, importObject);
+        exports = wasmModule.instance.exports;
+        memory = importObject.env.memory;
+        
+        // Debug: log available exports
+        console.log('Available exports:', Object.keys(exports));
+        
         // Create emulator instance
-        emulator = api.createEmulator();
+        emulator = exports.initEmulator();
+        if (!emulator) throw new Error("Failed to create emulator");
         
         // Get screen buffer pointer
-        const screenPtr = api.getScreenPtr(emulator);
-        screenArray = new Uint8Array(Module.HEAPU8.buffer, screenPtr, 64 * 32);
+        const screenPtr = exports.getScreenPtr(emulator);
+        screenArray = new Uint8Array(memory.buffer, screenPtr, exports.getScreenWidth() * exports.getScreenHeight());
         
-        // Store API for later use
-        window.Li8zAPI = api;
+        // Set random seed
+        const seed = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+        exports.setSeed(seed);
         
         console.log('WASM module initialized successfully');
         return true;
     } catch (error) {
         console.error('Failed to initialize WASM module:', error);
+        console.error('Error details:', error.message);
         return false;
     }
 }
@@ -65,19 +74,21 @@ export const Li8z = {
     init: initWasm,
     
     loadROM: (romData) => {
-        window.Li8zAPI.loadROM(emulator, romData, romData.length);
+        const romArray = new Uint8Array(memory.buffer, 0, romData.length);
+        romArray.set(romData);
+        exports.loadROM(emulator, romArray.byteOffset, romData.length);
     },
 
     tick: () => {
-        window.Li8zAPI.emuTick(emulator);
+        exports.tickEmulator(emulator);
     },
 
     tickTimers: () => {
-        return window.Li8zAPI.emuTickTimers(emulator);
+        return exports.tickTimers(emulator);
     },
 
     keypress: (key, pressed) => {
-        window.Li8zAPI.emuKeypress(emulator, key, pressed);
+        exports.keyPress(emulator, key, pressed);
     },
 
     getScreen: () => {
