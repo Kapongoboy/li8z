@@ -114,6 +114,11 @@ pub fn main() !void {
     ray.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Li8z");
     defer ray.CloseWindow();
 
+    // Load and set window icon
+    const icon = ray.LoadImage("public/li8z-icon.png");
+    ray.SetWindowIcon(icon);
+    ray.UnloadImage(icon);
+
     ray.SetTargetFPS(60);
 
     while (!ray.WindowShouldClose()) {
