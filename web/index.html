@@ -25,6 +25,8 @@
             margin: 20px 0;
         }
     </style>
+    <!-- Add audio element with 50% volume -->
+    <audio id="beep" src="../public/beep-02.wav" volume="0.05"></audio>
 </head>
 <body>
     <h1>Li8z Web Demo</h1>
@@ -54,6 +56,10 @@ Z X C V  →  A 0 B F
         
         // Initialize
         await Li8z.init();
+
+        // Initialize audio
+        const beepSound = document.getElementById('beep');
+        beepSound.volume = 0.05;  // Set to 5% volume
 
         // Key mapping
         const keyMap = {
@@ -118,9 +124,8 @@ Z X C V  →  A 0 B F
                 Li8z.tick();
             }
             if (Li8z.tickTimers()) {
-                // Play beep sound
-                const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
-                audio.play();
+                // Play beep sound using the audio element
+                beepSound.play().catch(console.error);
             }
             
             draw();
