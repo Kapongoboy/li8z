@@ -62,4 +62,29 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_lib_unit_tests.step);
     test_step.dependOn(&run_exe_unit_tests.step);
+
+    // Add WASM compilation target
+    const wasm = b.addStaticLibrary(.{
+        .name = "li8z-wasm",
+        .root_source_file = b.path("src/backend.zig"),
+        .target = b.resolveTargetQuery(.{
+            .cpu_arch = .wasm32,
+            .os_tag = .freestanding,
+        }),
+        .optimize = optimize,
+    });
+
+    // Configure WASM output
+    wasm.rdynamic = true;
+    wasm.import_memory = true;
+    wasm.initial_memory = 65536;
+    wasm.max_memory = 65536;
+    wasm.stack_size = 14752;
+
+    // Install WASM artifact
+    const install_wasm = b.addInstallArtifact(wasm, .{});
+
+    // Add a build step specifically for WASM
+    const wasm_step = b.step("wasm", "Build the WebAssembly library");
+    wasm_step.dependOn(&install_wasm.step);
 }
