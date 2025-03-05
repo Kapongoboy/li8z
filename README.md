@@ -1,4 +1,5 @@
 # Li8Z
+![logo][./public/li8z-icon.png]
 
 Hey, this is **Li8Z**, an attempt at implementing a Chip-8 emulator in Zig. I
 was inspired to try this project thanks to my
@@ -109,3 +110,5 @@ The web port of the emulator is now functional with full support for:
 - Display output
 - Keyboard input
 - Sound (at 5% volume by default)
+
+For roms to play I recommend checking out [here](https://github.com/kripod/chip8-roms), there's a nice collection of classics as well as some general programs to test out the emulator.
