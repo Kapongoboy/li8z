@@ -1,5 +1,5 @@
 # Li8Z
-![logo][./public/li8z-icon.png]
+![logo](./public/li8z-icon.png)
 
 Hey, this is **Li8Z**, an attempt at implementing a Chip-8 emulator in Zig. I
 was inspired to try this project thanks to my
