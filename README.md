@@ -21,6 +21,36 @@ a zig wrapper by
 
 ### Desktop Version
 
+#### Dependencies
+
+Before running the bootstrap scripts, you'll need to install some prerequisites:
+
+**Windows:**
+- Git: Download from https://git-scm.com/download/win
+- CMake: Download from https://cmake.org/download/
+- Ninja: Install via `winget install Ninja-build.Ninja` or download from GitHub releases
+- Visual Studio Build Tools (or full Visual Studio) with C++ support
+
+**Linux:**
+```bash
+# Debian/Ubuntu
+sudo apt-get install git cmake ninja-build gcc
+
+# Fedora
+sudo dnf install git cmake ninja-build gcc
+
+# Arch
+sudo pacman -S git cmake ninja gcc
+```
+
+**macOS:**
+```bash
+# Using Homebrew
+brew install git cmake ninja
+```
+
+For additional dependencies required by raylib (like X11 development libraries on Linux), please refer to the [raylib wiki](https://github.com/raysan5/raylib/wiki).
+
 The `bootstrap.sh` and `boostrap.ps1` scripts are provided to pull the correct
 packages and use them appropriately for the project. As builds are often tried
 against the latest unstable version of zig (currently v0.14.0-dev.3445+), raylib is now built by the
