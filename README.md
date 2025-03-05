@@ -86,7 +86,7 @@ To build and run the web version:
 zig build wasm
 
 # Start the development server
-./serve.sh
+python server.py
 
 # Visit http://localhost:8080/web/ in your browser
 ```
