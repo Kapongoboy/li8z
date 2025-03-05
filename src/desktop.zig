@@ -1,5 +1,10 @@
 const std = @import("std");
-const ray = @cImport(@cInclude("raylib.h"));
+const ray = @cImport({
+    @cInclude("raylib.h");
+    @cDefine("RAYGUI_IMPLEMENTATION", {});
+    @cInclude("raygui.h");
+    @cInclude("tinyfiledialogs.h");
+});
 const li = @import("backend.zig");
 const stdout = std.io.getStdOut().writer();
 const stdin = std.io.getStdIn().reader();
@@ -63,6 +68,11 @@ fn drawScreen(emu: *li.Emu) void {
     }
 }
 
+const GameState = enum {
+    menu,
+    running,
+};
+
 pub fn main() !void {
     zaudio.init(std.heap.page_allocator);
     defer zaudio.deinit();
@@ -77,39 +87,10 @@ pub fn main() !void {
     music.setVolume(0.1);
     defer music.destroy();
 
-    var arg_iter = try std.process.ArgIterator.initWithAllocator(std.heap.page_allocator);
-    defer arg_iter.deinit();
-
-    var count: usize = 0;
-    var args: [2][]const u8 = undefined;
-
-    while (arg_iter.next()) |arg| : (count += 1) {
-        if (count >= 2) {
-            try std.io.getStdErr().writer().print("To many arguments\nUsage: li8z path/to/game\n", .{});
-            return;
-        }
-        args[count] = arg;
-    }
-
+    var game_state: GameState = .menu;
     var chip = li.Emu.init();
-    var buffer = std.ArrayList(u8).init(std.heap.page_allocator);
-    defer buffer.deinit();
-
-    const rom = std.fs.cwd().openFile(args[1], .{}) catch |err| {
-        std.debug.print("Unable to open file: {}\n", .{err});
-        return;
-    };
-    defer rom.close();
-
-    const data = rom.readToEndAlloc(buffer.allocator, 4096) catch |err| {
-        std.debug.print("Unable to read file: {}\n", .{err});
-        return;
-    };
-
-    try buffer.appendSlice(data);
-
-    var rom_data: []const u8 = buffer.items;
-    chip.load(&rom_data);
+    var selected_file: ?[]const u8 = null;
+    const filter_pattens = [_][*c]const u8{ "*.ch8", "*.rom" };
 
     ray.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Li8z");
     defer ray.CloseWindow();
@@ -124,28 +105,77 @@ pub fn main() !void {
     while (!ray.WindowShouldClose()) {
         ray.BeginDrawing();
         defer ray.EndDrawing();
-
-        for (game_keys) |key| {
-            if (ray.IsKeyDown(key)) {
-                if (key2btn(key)) |k| {
-                    chip.keypress(k, true);
-                }
-            }
-
-            if (ray.IsKeyUp(key)) {
-                if (key2btn(key)) |k| {
-                    chip.keypress(k, false);
-                }
-            }
-        }
-
-        for (0..TICKS_PER_FRAME) |_| {
-            chip.tick();
-        }
-
-        if (chip.tickTimers()) try music.start();
-        drawScreen(&chip);
-
         ray.ClearBackground(ray.BLACK);
+
+        switch (game_state) {
+            .menu => {
+                // Draw centered title
+                const title = "Li8z CHIP-8 Emulator";
+                const title_width = ray.MeasureText(title, 40);
+                ray.DrawText(title, @divTrunc(@as(i32, WINDOW_WIDTH) - title_width, 2), 100, 40, ray.WHITE);
+
+                // Draw file selection button
+                const btn_width: i32 = 200;
+                const btn_height: i32 = 40;
+                const btn_x = @divTrunc(@as(i32, WINDOW_WIDTH) - btn_width, 2);
+                const file_btn_y: i32 = 200;
+                const start_btn_y: i32 = 300;
+
+                const file_btn_rec = ray.Rectangle{ .x = @floatFromInt(btn_x), .y = file_btn_y, .width = btn_width, .height = btn_height };
+                const start_btn_rec = ray.Rectangle{ .x = @floatFromInt(btn_x), .y = start_btn_y, .width = btn_width, .height = btn_height };
+
+                if (ray.GuiButton(file_btn_rec, "Select ROM") != 0) {
+                    const file_path = ray.tinyfd_openFileDialog("Select ROM file", "", 2, &filter_pattens, "chip8 roms", 0);
+                    if (file_path != null) {
+                        selected_file = std.mem.span(file_path);
+                    }
+                }
+
+                // Display selected file
+                if (selected_file) |file| {
+                    const text_width = ray.MeasureText(file.ptr, 20);
+                    ray.DrawText(file.ptr, @divTrunc(@as(i32, WINDOW_WIDTH) - text_width, 2), 250, 20, ray.WHITE);
+                }
+
+                // Draw start button (only enabled if file is selected)
+                if (selected_file != null and ray.GuiButton(start_btn_rec, "Start Game") != 0) {
+                    // Load ROM and start game
+                    var buffer = std.ArrayList(u8).init(std.heap.page_allocator);
+                    defer buffer.deinit();
+
+                    if (std.fs.cwd().openFile(selected_file.?, .{})) |rom| {
+                        defer rom.close();
+                        if (rom.readToEndAlloc(buffer.allocator, 4096)) |data| {
+                            try buffer.appendSlice(data);
+                            var rom_data: []const u8 = buffer.items;
+                            chip.load(&rom_data);
+                            game_state = .running;
+                        } else |_| {}
+                    } else |_| {}
+                }
+            },
+            .running => {
+                for (game_keys) |key| {
+                    if (ray.IsKeyDown(key)) {
+                        if (key2btn(key)) |k| {
+                            chip.keypress(k, true);
+                        }
+                    }
+
+                    if (ray.IsKeyUp(key)) {
+                        if (key2btn(key)) |k| {
+                            chip.keypress(k, false);
+                        }
+                    }
+                }
+
+                for (0..TICKS_PER_FRAME) |_| {
+                    chip.tick();
+                }
+
+                if (chip.tickTimers()) try music.start();
+                drawScreen(&chip);
+            },
+        }
     }
 }

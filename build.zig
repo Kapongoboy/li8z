@@ -24,9 +24,17 @@ pub fn build(b: *std.Build) void {
     const zaudio = b.dependency("zaudio", .{});
     desktop_bin.root_module.addImport("zaudio", zaudio.module("root"));
     desktop_bin.linkLibrary(zaudio.artifact("miniaudio"));
-    desktop_bin.addIncludePath(.{
-        .cwd_relative = ".packages/raylib/build/raylib/include",
-    });
+    const desktop_includes = [_][]const u8{
+        ".packages/raylib/build/raylib/include",
+        ".packages/tinyfiledialogs",
+        ".packages/raygui/src",
+    };
+
+    for (desktop_includes) |include_path| {
+        desktop_bin.addIncludePath(b.path(include_path));
+    }
+
+    desktop_bin.addCSourceFile(.{ .file = b.path(".packages/tinyfiledialogs/tinyfiledialogs.c") });
     desktop_bin.addObjectFile(b.path(".packages/raylib/build/raylib/libraylib.a"));
     desktop_bin.linkLibC();
 
