@@ -15,7 +15,7 @@ this is tictactoe running on the emulator.
 
 Though I tried to keep the project as zig only as possible, due to the immaturity
 of the language I had to rely a bit on some C libraries, in particular
-[raylib](https://www.raylib.com/) and [miniaudio](https://miniaud.io/) (through
+[raylib](https://www.raylib.com/), [raygui](https://github.com/raysan5/raygui), [tinyfiledialogs](http://git.code.sf.net/p/tinyfiledialogs/code) and [miniaudio](https://miniaud.io/) (through
 a zig wrapper by
 [zig-gamedev](https://github.com/zig-gamedev/zig-gamedev/tree/main/libs/zaudio)).
 
@@ -32,13 +32,15 @@ emulator with:
 zig build --release=safe
 ```
 
-The built binary can then be found in `zig-out/bin/li8z` and requires an
-argument that is the path to the rom you would like to play. For testing you can
-simply run:
+The built binary can be found in `zig-out/bin/li8z`. You can run the desktop version with:
 
 ```bash
-zig build run -- /path/to/rom
+zig build desktop
 ```
+
+This will launch the emulator with a user interface where you can:
+1. Select a ROM file using the file picker
+2. Start the game using the Start button
 
 ### Web Version
 
