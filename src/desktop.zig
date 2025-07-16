@@ -5,10 +5,17 @@ const ray = @cImport({
     @cInclude("raygui.h");
     @cInclude("tinyfiledialogs.h");
 });
+const ma = @cImport({@cInclude("miniaudio.h");});
 const li = @import("backend.zig");
 const stdout = std.io.getStdOut().writer();
 const stdin = std.io.getStdIn().reader();
 const zaudio = @import("zaudio");
+
+const MiniAudioErrors = error{
+    InitFailed,
+    VolumeFailed,
+    PlaySoundFailed,
+};
 
 const SCALE: u32 = 15;
 const WINDOW_WIDTH: u32 = li.SCREEN_WIDTH * SCALE;
@@ -74,18 +81,23 @@ const GameState = enum {
 };
 
 pub fn main() !void {
-    zaudio.init(std.heap.page_allocator);
-    defer zaudio.deinit();
+    var result: ma.ma_result = undefined;
+    var engine: ma.ma_engine = undefined;
 
-    const engine = try zaudio.Engine.create(null);
-    defer engine.destroy();
+    result = ma.ma_engine_init(null, &engine);
+    defer ma.ma_engine_uninit(&engine);
 
-    const music = try engine.createSoundFromFile(
-        "./public/beep-02.wav",
-        .{ .flags = .{ .stream = true } },
-    );
-    music.setVolume(0.1);
-    defer music.destroy();
+    if (result != ma.MA_SUCCESS) {
+        std.debug.print("ma_engine_init failed: {}\n", .{result});
+        return MiniAudioErrors.InitFailed;
+    }
+
+    result = ma.ma_engine_set_volume(&engine, 0.1);
+
+    if (result != ma.MA_SUCCESS) {
+        std.debug.print("ma_engine_set_volume failed: {}\n", .{result});
+        return MiniAudioErrors.VolumeFailed;
+    }
 
     var game_state: GameState = .menu;
     var chip = li.Emu.init();
@@ -173,7 +185,15 @@ pub fn main() !void {
                     chip.tick();
                 }
 
-                if (chip.tickTimers()) try music.start();
+                if (chip.tickTimers()) {
+                    result = ma.ma_engine_play_sound(&engine, "public/beep-02.wav", null);
+
+                    if (result != ma.MA_SUCCESS) {
+                        std.debug.print("ma_engine_play_sound failed: {}\n", .{result});
+                        return MiniAudioErrors.PlaySoundFailed;
+                    }
+                }
+
                 drawScreen(&chip);
             },
         }

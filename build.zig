@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -21,20 +22,19 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const zaudio = b.dependency("zaudio", .{});
-    desktop_bin.root_module.addImport("zaudio", zaudio.module("root"));
-    desktop_bin.linkLibrary(zaudio.artifact("miniaudio"));
-    const desktop_includes = [_][]const u8{
-        ".packages/raylib/build/raylib/include",
-        ".packages/tinyfiledialogs",
-        ".packages/raygui/src",
-    };
+    const desktop_includes = [_][]const u8{ ".packages/raylib/build/raylib/include", ".packages/tinyfiledialogs", ".packages/raygui/src", ".packages/miniaudio/" };
 
     for (desktop_includes) |include_path| {
         desktop_bin.addIncludePath(b.path(include_path));
     }
 
     desktop_bin.addCSourceFile(.{ .file = b.path(".packages/tinyfiledialogs/tinyfiledialogs.c") });
+
+    switch (builtin.target.os.tag) {
+        .linux, .freebsd => desktop_bin.addCSourceFile(.{ .file = b.path(".packages/miniaudio/miniaudio.c"), .flags = &[_][]const u8{ "-lpthread", "-lm" } }),
+        else => desktop_bin.addCSourceFile(.{ .file = b.path(".packages/miniaudio/miniaudio.c") }),
+    }
+
     desktop_bin.addObjectFile(b.path(".packages/raylib/build/raylib/libraylib.a"));
     desktop_bin.linkLibC();
 
