@@ -5,17 +5,9 @@ const ray = @cImport({
     @cInclude("raygui.h");
     @cInclude("tinyfiledialogs.h");
 });
-const ma = @cImport({@cInclude("miniaudio.h");});
 const li = @import("backend.zig");
 const stdout = std.io.getStdOut().writer();
 const stdin = std.io.getStdIn().reader();
-const zaudio = @import("zaudio");
-
-const MiniAudioErrors = error{
-    InitFailed,
-    VolumeFailed,
-    PlaySoundFailed,
-};
 
 const SCALE: u32 = 15;
 const WINDOW_WIDTH: u32 = li.SCREEN_WIDTH * SCALE;
@@ -81,24 +73,6 @@ const GameState = enum {
 };
 
 pub fn main() !void {
-    var result: ma.ma_result = undefined;
-    var engine: ma.ma_engine = undefined;
-
-    result = ma.ma_engine_init(null, &engine);
-    defer ma.ma_engine_uninit(&engine);
-
-    if (result != ma.MA_SUCCESS) {
-        std.debug.print("ma_engine_init failed: {}\n", .{result});
-        return MiniAudioErrors.InitFailed;
-    }
-
-    result = ma.ma_engine_set_volume(&engine, 0.1);
-
-    if (result != ma.MA_SUCCESS) {
-        std.debug.print("ma_engine_set_volume failed: {}\n", .{result});
-        return MiniAudioErrors.VolumeFailed;
-    }
-
     var game_state: GameState = .menu;
     var chip = li.Emu.init();
     var selected_file: ?[]const u8 = null;
@@ -106,6 +80,13 @@ pub fn main() !void {
 
     ray.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Li8z");
     defer ray.CloseWindow();
+
+    ray.InitAudioDevice();
+    defer ray.CloseAudioDevice();
+
+    const beep = ray.LoadSound("public/beep-02.wav");
+    ray.SetSoundVolume(beep, 0.1);
+    defer ray.UnloadSound(beep);
 
     // Load and set window icon
     const icon = ray.LoadImage("public/li8z-icon.png");
@@ -185,14 +166,7 @@ pub fn main() !void {
                     chip.tick();
                 }
 
-                if (chip.tickTimers()) {
-                    result = ma.ma_engine_play_sound(&engine, "public/beep-02.wav", null);
-
-                    if (result != ma.MA_SUCCESS) {
-                        std.debug.print("ma_engine_play_sound failed: {}\n", .{result});
-                        return MiniAudioErrors.PlaySoundFailed;
-                    }
-                }
+                if (chip.tickTimers()) ray.PlaySound(beep);
 
                 drawScreen(&chip);
             },
